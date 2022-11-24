@@ -1,7 +1,7 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:homefix/ui/registration_ui/main_ui/services_row.dart';
 import 'package:homefix/utils/colors.dart';
+import 'package:homefix/utils/images.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -11,8 +11,6 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  int _selectedIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -24,20 +22,31 @@ class _HomeViewState extends State<HomeView> {
             title: RichText(
                 text: const TextSpan(children: [
               TextSpan(
-                  text: 'Home',
-                  style: TextStyle(
-                      fontSize: 30, color: Colors.white, fontFamily: 'Roboto')),
+                text: 'Home',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 35,
+                  color: Colors.white,
+                  fontFamily: 'Roboto',
+                ),
+              ),
               TextSpan(
-                  text: ' Fix',
-                  style: TextStyle(
-                      fontSize: 30, color: dbrown, fontFamily: 'Roboto'))
+                text: ' Fix',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 35,
+                  color: mbblack,
+                  fontFamily: 'Roboto',
+                ),
+              )
             ]))),
         drawer: const Drawer(),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        body: ListView(
+          physics: const NeverScrollableScrollPhysics(),
+          // mainAxisS
           children: [
             Container(
-              height: MediaQuery.of(context).size.height * 0.17,
+              height: MediaQuery.of(context).size.height / 5.5,
               decoration: const BoxDecoration(
                   color: yellow,
                   borderRadius: BorderRadius.only(
@@ -47,12 +56,12 @@ class _HomeViewState extends State<HomeView> {
                 children: [
                   Center(
                     child: SizedBox(
-                      height: 40,
-                      width: MediaQuery.of(context).size.height * 0.45,
-                      child: TextField(
+                      height: MediaQuery.of(context).size.height / 20,
+                      width: MediaQuery.of(context).size.width * 0.8,
+                      child: TextFormField(
                         decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.search),
-                            hintText: 'search here',
+                            // hintText: 'search here',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(15),
                             ),
@@ -79,8 +88,8 @@ class _HomeViewState extends State<HomeView> {
                               foregroundColor:
                                   MaterialStateProperty.all(Colors.white),
                             ),
-                            child: const Text(
-                              'Plumbing',
+                            child: Text(
+                              circularImagesName[index],
                             ),
                           ),
                         )
@@ -106,49 +115,13 @@ class _HomeViewState extends State<HomeView> {
                 ],
               ),
             ),
-            SizedBox(
-              width: MediaQuery.of(context).size.width,
-              child: Row(
-                children: [
-                  ...List.generate(
-                    5,
-                    (index) => Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(
-                            () {
-                              _selectedIndex = index;
-                            },
-                          );
-                        },
-                        child: SizedBox(
-                          height: MediaQuery.of(context).size.height / 9,
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: yellow,
-                                radius: 34,
-                                child: CircleAvatar(
-                                  backgroundColor:
-                                      _selectedIndex == index ? yellow : white,
-                                  radius: 32,
-                                ),
-                              ),
-                              const Text('data')
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
+            // //////////////////////this is a selective circleavatar
+
+            const AvailableServices(),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Container(
-                color: dbrown,
+                color: mbblack,
                 height: MediaQuery.of(context).size.height / 3.8,
                 child: const Center(
                     child: Text(
@@ -188,33 +161,42 @@ class _HomeViewState extends State<HomeView> {
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (ctx, index) => Padding(
                     padding: const EdgeInsets.only(left: 8, right: 8, top: 8),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.height / 2.5,
-                      child: Column(
-                        children: [
-                          Container(
-                            height: MediaQuery.of(context).size.height / 5,
-                            // width: MediaQuery.of(context).size.height / 2,
-                            color: dbrown,
-                          ),
-                          const Text(
-                            'data',
-                            style: TextStyle(
-                              fontFamily: 'Roboto',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
+                    child: AspectRatio(
+                      aspectRatio: 16 / 12,
+                      child: SizedBox(
+                        width: MediaQuery.of(context).size.height / 2.5,
+                        height: 10,
+                        child: Column(
+                          children: [
+                            AspectRatio(
+                              aspectRatio: 16 / 9,
+                              child: Container(
+                                // color: yellow,
+                                decoration: const BoxDecoration(
+                                    image: DecorationImage(
+                                        image: AssetImage(
+                                            'images/cleaning.jpeg'))),
+                              ),
                             ),
-                          ),
-                          const Expanded(
-                            child: Text(
-                              'Free fan cleaning and more',
+                            const Text(
+                              'Cleaning',
                               style: TextStyle(
-                                  fontFamily: 'Roboto',
-                                  fontSize: 18,
-                                  color: Colors.grey),
+                                fontFamily: 'Roboto',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                              ),
                             ),
-                          ),
-                        ],
+                            const Expanded(
+                              child: Text(
+                                'Free fan cleaning and more',
+                                style: TextStyle(
+                                    fontFamily: 'Roboto',
+                                    fontSize: 12,
+                                    color: Colors.grey),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
