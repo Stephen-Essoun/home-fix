@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:homefix/ui/registration_ui/main_ui/booking_view.dart';
-import 'package:homefix/ui/registration_ui/main_ui/home.dart';
-import 'package:provider/provider.dart';
-
+import 'package:homefix/ui/map_ui/map_view.dart';
 import 'package:homefix/ui/registration_ui/main_ui/welcome_view.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,7 +24,7 @@ class MyApp extends StatelessWidget {
           ),
           primarySwatch: Colors.blue,
         ),
-        home: const HomeView(),
+        home: const MapView(),
       ),
     );
   }
