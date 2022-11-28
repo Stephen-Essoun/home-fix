@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:homefix/constants/app_routes.dart';
 import 'package:homefix/ui/map_ui/map_view.dart';
+import 'package:homefix/ui/registration_ui/main_ui/home.dart';
 import 'package:homefix/ui/registration_ui/main_ui/welcome_view.dart';
 import 'package:provider/provider.dart';
 
@@ -17,14 +19,19 @@ class MyApp extends StatelessWidget {
       providers: [Provider(create: (_) => Clicked())],
       child: MaterialApp(
         title: 'Flutter Demo',
+        debugShowCheckedModeBanner: false,
         theme: ThemeData(
           appBarTheme: const AppBarTheme(
             foregroundColor: Colors.black,
             backgroundColor: Colors.transparent,
           ),
-          primarySwatch: Colors.blue,
+          primarySwatch: Colors.amber,
         ),
-        home: const MapView(),
+        initialRoute: AppRoutes.serviceBookingScreen,
+        routes: {
+          AppRoutes.homeScreen: (context) => const HomeView(),
+          AppRoutes.serviceBookingScreen: (context) => const MapView(),
+        },
       ),
     );
   }

@@ -1,54 +1,63 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:homefix/ui/map_ui/map_helpers/load_custom_marker_icon.dart';
+import 'package:homefix/ui/map_ui/map_helpers/load_map_style.dart';
+import 'package:homefix/ui/map_ui/map_helpers/to_lat_lng.dart';
+import 'package:homefix/utils/colors.dart';
 import 'package:location/location.dart';
 
-Location locationService = Location();
+class LocationNotifier {
+  ValueNotifier currentLocation = ValueNotifier<LocationData?>(null);
+  setCurrentLocation(location) => currentLocation.value = location;
+}
+
+class ZoomNotifier {
+  ValueNotifier currentZoom = ValueNotifier<double>(17.0);
+  setCurrentZoom(zoom) => currentZoom.value = zoom;
+}
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
 
   @override
-  State<MapView> createState() => MapViewState();
+  State<MapView> createState() => _MapViewState();
 }
 
-class MapViewState extends State<MapView> {
-  static const LatLng clientLocation = LatLng(37.33429383, -122.06600055);
-
+class _MapViewState extends State<MapView> {
   final Completer<GoogleMapController> _controller = Completer();
-  LocationData? currentLocation;
-
-  List<LatLng> polylineCoordinates = [];
-  double zoom = 16;
 
   BitmapDescriptor clientIcons = BitmapDescriptor.defaultMarker;
   BitmapDescriptor workersIcons = BitmapDescriptor.defaultMarker;
 
+  LocationNotifier locationNotifier = LocationNotifier();
+
+  // this functions gets and track the current location for the user
   void getCurrentLocation() async {
     Location location = Location();
-    location.getLocation().then((location) {
-      currentLocation = location;
-    });
+    location.getLocation().then((location) => locationNotifier.setCurrentLocation(location));
 
     GoogleMapController googleMapController = await _controller.future;
     location.onLocationChanged.listen(
       (newLocation) {
-        currentLocation = newLocation;
-        googleMapController.animateCamera(CameraUpdate.newCameraPosition(getCurrentCameraPosition()));
-        setState(() {});
+        locationNotifier.setCurrentLocation(newLocation);
+        googleMapController.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: toLatLng(locationNotifier.currentLocation.value),
+            ),
+          ),
+        );
       },
     );
   }
 
-  CameraPosition getCurrentCameraPosition() {
-    return CameraPosition(
-      target: LatLng(currentLocation?.latitude ?? 0, currentLocation?.longitude ?? 0),
-      zoom: zoom,
-    );
+  // this function loads icons which built programmatically
+  // loadCustomMarkerIcon is the function that build the icons
+  generateIcons() async {
+    clientIcons = await loadCustomMarkerIcon(Icons.location_pin, Colors.amber, 128);
+    workersIcons = await loadCustomMarkerIcon(Icons.engineering, Colors.black87, 128);
   }
 
   @override
@@ -58,47 +67,40 @@ class MapViewState extends State<MapView> {
     super.initState();
   }
 
-  generateIcons() async {
-    clientIcons = await setCustomMarkerIcon(Icons.location_pin, Colors.amber, 128);
-    workersIcons = await setCustomMarkerIcon(Icons.engineering, Colors.grey, 128);
-  }
-
-  Future<BitmapDescriptor> setCustomMarkerIcon(IconData iconData, Color color, int fontSize) async {
-    final pictureRecorder = PictureRecorder();
-    final canvas = Canvas(pictureRecorder);
-    final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    final iconStr = String.fromCharCode(iconData.codePoint);
-
-    textPainter.text = TextSpan(
-      text: iconStr,
-      style: TextStyle(
-        letterSpacing: 0.0,
-        fontSize: fontSize.toDouble(),
-        fontFamily: iconData.fontFamily,
-        color: color,
-      ),
-    );
-    textPainter.layout();
-    textPainter.paint(canvas, const Offset(0.0, 0.0));
-
-    final picture = pictureRecorder.endRecording();
-    final image = await picture.toImage(fontSize, fontSize);
-    final bytes = await image.toByteData(format: ImageByteFormat.png);
-
-    return BitmapDescriptor.fromBytes(bytes!.buffer.asUint8List());
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: currentLocation == null
-          ? const Center(child: CircularProgressIndicator())
-          : GoogleMap(
+    return SafeArea(
+      top: false,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: yellow,
+          elevation: 0,
+          title: const Text("Book Your Service"),
+          leading: IconButton(
+            icon: const Icon(Icons.menu, size: 32),
+            onPressed: () {},
+          ),
+        ),
+        body: ValueListenableBuilder(
+          valueListenable: locationNotifier.currentLocation,
+          builder: (context, currentLocation, child) {
+            if (currentLocation == null) return const Center(child: CircularProgressIndicator());
+
+            return GoogleMap(
               mapType: MapType.normal,
-              initialCameraPosition: getCurrentCameraPosition(),
+              initialCameraPosition: CameraPosition(
+                target: toLatLng(locationNotifier.currentLocation.value),
+                zoom: 17.0,
+              ),
               markers: {
+                // User(service place) marker
                 Marker(
-                    markerId: const MarkerId("currentLocation"), position: LatLng(currentLocation!.latitude!, currentLocation!.longitude!), icon: clientIcons),
+                  markerId: const MarkerId("currentLocation"),
+                  position: toLatLng(currentLocation),
+                  icon: clientIcons,
+                ),
+
+                // Workers markers
                 Marker(
                   markerId: const MarkerId("worker1"),
                   position: const LatLng(6.664306, -1.617526),
@@ -126,39 +128,19 @@ class MapViewState extends State<MapView> {
                 ),
               },
               onMapCreated: (mapController) {
-                changeMapMode(mapController);
+                loadMapStyle(mapController);
                 _controller.complete(mapController);
               },
-              onCameraMove: (position) {
-                zoom = position.zoom;
-                setState(() {});
+
+              // this function used to update the map parameters such as, zoom, tilt, ...
+              onCameraMove: (position) async {
+                GoogleMapController mapController = await _controller.future;
+                mapController.animateCamera(CameraUpdate.newCameraPosition(position));
               },
-              polylines: {
-                Polyline(
-                  polylineId: const PolylineId("route"),
-                  points: polylineCoordinates,
-                  color: const Color(0xFF7B61FF),
-                  width: 6,
-                ),
-              },
-            ),
+            );
+          },
+        ),
+      ),
     );
-  }
-
-  //this is the function to load custom map style json
-  void changeMapMode(GoogleMapController mapController) {
-    getJsonFile("assets/map_styles/standard.json").then((value) => setMapStyle(value, mapController));
-  }
-
-  //helper function
-  void setMapStyle(String mapStyle, GoogleMapController mapController) {
-    mapController.setMapStyle(mapStyle);
-  }
-
-  //helper function
-  Future<String> getJsonFile(String path) async {
-    ByteData byte = await rootBundle.load(path);
-    var list = byte.buffer.asUint8List(byte.offsetInBytes, byte.lengthInBytes);
-    return utf8.decode(list);
   }
 }
